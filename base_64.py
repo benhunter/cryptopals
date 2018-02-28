@@ -8,29 +8,12 @@ import binascii
 # Table of base64 values. Each index in the list is the int equal to the character in that position.
 # base64_table[64] is the default padding character, '='
 # To use alternate base64 charaters, change base64_table[62] and base64_table[63]
+from util import groups, hexbytes_to_bytestr
+
 base64_table = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
                 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
                 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+',
                 '/', '=']
-
-
-def groups(seq, length):
-    '''
-
-    :param seq: A slicable object like string or list.
-    :param length: The length of each group (ie. 2 for pairs)
-    :return:
-    '''
-    for i in range(0, len(seq), length):
-        # print(i)
-        yield seq[i:i+length]
-
-
-def hexbytes_to_bytestr(bytes_data):
-
-    l = list(map(lambda x: chr(int(x, 16)).encode(), groups(bytes_data, 2)))
-    s = b''.join(l)
-    return s
 
 
 def bytes_to_base64(data):
