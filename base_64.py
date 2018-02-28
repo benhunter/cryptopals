@@ -31,11 +31,62 @@ def hexbytes_to_bytestr(bytes_data):
 
 
 def bytes_to_base64(data):
+    # print('input', data)
 
     b64 = ''
     for triplet in groups(data, 3):
+        len_triplet = len(triplet)  # Store in case len(triplet) == 1.
+        # 6 bits from triplet[0]
+        r0 = triplet[0] >> 2
 
-        # 6 bits from s[0]
+        if len_triplet == 1:
+            # Add a byte with zeros so that triplet[1] succeeds.
+            # This changes the len(triplet), which is why we stored it earlier.
+            triplet = b''.join((triplet, b'\x00'))
+            r2 = 64
+            r3 = 64
+
+        # 2 bits from triplet[0] and 4 bits from triplet[1].
+        r1 = triplet[0] & 0b11
+        r1 = r1 << 4
+        temp = triplet[1] >> 4
+        r1 = r1 | temp
+
+        if len_triplet > 1:
+
+            # 4 bits from triplet[1] and 2 bits from triplet[2].
+            r2 = triplet[1] & 0b00001111
+            r2 = r2 << 2
+
+            if len_triplet == 3:
+
+                temp = triplet[2] & 0b11000000
+                temp = temp >> 6
+                r2 |= temp
+
+                # 6 bits from triplet[2]
+                r3 = triplet[2] & 0b00111111
+
+            elif len_triplet == 2:
+
+                # triplet[2] is empty
+                r3 = 64
+
+
+        b64 += base64_table[r0]
+        b64 += base64_table[r1]
+        b64 += base64_table[r2]
+        b64 += base64_table[r3]
+
+    # print('output', b64)
+    return b64
+
+
+def bytes_to_base64_original(data):
+    b64 = ''
+    for triplet in groups(data, 3):
+
+        # 6 bits from triplet[0]
         r0 = triplet[0] >> 2
 
         if len(triplet) == 3:
@@ -44,25 +95,25 @@ def bytes_to_base64(data):
             temp = triplet[1] >> 4
             r1 = r1 | temp
 
-            # 4 bits from s[1] and 2 bits from s[2]
+            # 4 bits from triplet[1] and 2 bits from triplet[2]
             r2 = triplet[1] & 0b00001111
             r2 = r2 << 2
             temp = triplet[2] & 0b11000000
             temp = temp >> 6
             r2 |= temp
 
-            # 6 bits from s[2]
+            # 6 bits from triplet[2]
             r3 = triplet[2] & 0b00111111
 
         elif len(triplet) == 2:
 
-            # 2 bits from s[0] and 4 bits from s[1]
+            # 2 bits from triplet[0] and 4 bits from triplet[1]
             r1 = triplet[0] & 0b11
             r1 = r1 << 4
             temp = triplet[1] >> 4
             r1 = r1 | temp
 
-            # 4 bits from s[1] and 2 bits from s[2]
+            # 4 bits from triplet[1] and 2 bits from triplet[2]
             r2 = triplet[1] & 0b00001111
             r2 = r2 << 2
 
@@ -75,7 +126,7 @@ def bytes_to_base64(data):
             triplet = b''.join((triplet, b'\x00'))
             print('after join', triplet)
 
-            # 2 bits from s[0] and 4 bits from s[1]
+            # 2 bits from triplet[0] and 4 bits from triplet[1]
             r1 = triplet[0] & 0b11
             r1 = r1 << 4
             temp = triplet[1] >> 4
@@ -102,6 +153,7 @@ def test_hex_to_base64():
              '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726': 'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyBg=='
              }
 
+    # Test everything in the dict. Key is hexbytes, value is base64.
     for test in tests:
         assert bytes_to_base64(hexbytes_to_bytestr(test.encode())) == tests[test]
 
@@ -110,13 +162,12 @@ def test_hex_to_base64():
         else:
             assert bytes_to_base64(hexbytes_to_bytestr(test.encode())) == base64.b64encode(binascii.unhexlify(test)).decode()
 
-    print(b'\x00')
-    print('\x00')
-    print(b'0')
-    print('0')
-    print(bin(0))
-    print(bin(ord(b'0')))
-    print(bin(ord('0')))
+    # Test a single case if needed:
+    # t = '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f'
+    # a = bytes_to_base64(hexbytes_to_bytestr(t.encode()))
+    # b = base64.b64encode(binascii.unhexlify(t)).decode()
+    # assert a == b
+
 
 if __name__ == '__main__':
 
