@@ -15,7 +15,7 @@ def groups(seq, length):
     '''
 
     :param seq: A slicable object like string or list.
-    :param length: The length of the groups
+    :param length: The length of each group (ie. 2 for pairs)
     :return:
     '''
     for i in range(0, len(seq), length):
@@ -54,22 +54,7 @@ def bytes_to_base64(data):
             # 6 bits from s[2]
             r3 = triplet[2] & 0b00111111
 
-        elif len(triplet) == 1:
-
-            triplet = b''.join((triplet, b'\x00'))
-
-            # 2 bits from s[0] and 4 bits from s[1]
-            r1 = triplet[0] & 0b11
-            r1 = r1 << 4
-            temp = triplet[1] >> 4
-            r1 = r1 | temp
-
-            r2 = 64
-            r3 = 64
-
         elif len(triplet) == 2:
-
-            # triplet = b''.join((triplet, b'\x00'))
 
             # 2 bits from s[0] and 4 bits from s[1]
             r1 = triplet[0] & 0b11
@@ -82,6 +67,21 @@ def bytes_to_base64(data):
             r2 = r2 << 2
 
             # triplet[2] is empty
+            r3 = 64
+
+        elif len(triplet) == 1:
+            print('triplet is length 1')
+            print('before join', triplet)
+            triplet = b''.join((triplet, b'\x00'))
+            print('after join', triplet)
+
+            # 2 bits from s[0] and 4 bits from s[1]
+            r1 = triplet[0] & 0b11
+            r1 = r1 << 4
+            temp = triplet[1] >> 4
+            r1 = r1 | temp
+
+            r2 = 64
             r3 = 64
 
         b64 += base64_table[r0]
@@ -110,6 +110,13 @@ def test_hex_to_base64():
         else:
             assert bytes_to_base64(hexbytes_to_bytestr(test.encode())) == base64.b64encode(binascii.unhexlify(test)).decode()
 
+    print(b'\x00')
+    print('\x00')
+    print(b'0')
+    print('0')
+    print(bin(0))
+    print(bin(ord(b'0')))
+    print(bin(ord('0')))
 
 if __name__ == '__main__':
 
@@ -121,9 +128,14 @@ if __name__ == '__main__':
     print(unhex)
     b64 = base64.b64encode(unhex)
     print(b64.decode())
+    # print(b64)
 
     s = hexbytes_to_bytestr(bin_data)
     print(bytes_to_base64(s))
+
+    # hexlify output test
+    print('hexlify output type:', type(binascii.hexlify(unhex)))
+
 
 ''' Base64 Table
 
