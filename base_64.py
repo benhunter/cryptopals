@@ -5,6 +5,9 @@
 import base64
 import binascii
 
+# Table of base64 values. Each index in the list is the int equal to the character in that position.
+# base64_table[64] is the default padding character, '='
+# To use alternate base64 charaters, change base64_table[62] and base64_table[63]
 base64_table = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
                 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
                 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+',
@@ -144,6 +147,9 @@ def bytes_to_base64_original(data):
 
 
 def test_hex_to_base64():
+    '''
+    Tests that work with pytest and Nosetest test frameworks.
+    '''
 
     tests = {'49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d':'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t',
              '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6': 'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb28G',
@@ -168,11 +174,7 @@ def test_hex_to_base64():
     # b = base64.b64encode(binascii.unhexlify(t)).decode()
     # assert a == b
 
-
-if __name__ == '__main__':
-
     data = '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d'
-
     bin_data = data.encode()
     unhex = binascii.unhexlify(data)
     # unhex = binascii.unhexlify(bin_data)
@@ -188,6 +190,7 @@ if __name__ == '__main__':
     print('hexlify output type:', type(binascii.hexlify(unhex)))
 
 
+# Base64 Table
 ''' Base64 Table
 
  0 A
