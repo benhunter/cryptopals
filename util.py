@@ -46,10 +46,14 @@ def plaintext_score(bytestr):
     score = 0
 
     # weights
-    COMMON_WEIGHT = 3
-    PUNCTUATION_WEIGHT = 1
-    ISPRINTABLE_WEIGHT = 10
-    UNICODEDECODEERROR_WEIGHT = -15
+    COMMON_WEIGHT = 1  # 3
+    PUNCTUATION_WEIGHT = 0  # 1
+    ISPRINTABLE_WEIGHT = 0  # 10
+    UNICODEDECODEERROR_WEIGHT = 0  # -15
+    NO_SPACES_PENALTY = -10
+    COMMON_WORD_BONUS = 10
+
+    common_words = [b'the', b'an', b'and', b'or', b'for', b'you', b"'re"]
 
     for byte in bytestr:
         if bytes([byte]).upper() in b'ETAOIN SHRDLU':
@@ -57,9 +61,17 @@ def plaintext_score(bytestr):
 
         if bytes([byte]).upper() in b',.?;:\'"/:!':
             score += PUNCTUATION_WEIGHT
+
     try:
         if bytestr.decode().isprintable():
             score += ISPRINTABLE_WEIGHT
+
+        if b' ' not in bytestr:
+            score += NO_SPACES_PENALTY
+
+        for word in common_words:
+            if word in bytestr:
+                score += COMMON_WORD_BONUS
     except UnicodeDecodeError:
         score -= UNICODEDECODEERROR_WEIGHT
 

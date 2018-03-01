@@ -83,3 +83,12 @@ def test_singlebyte_xor():
     decode = decode_single_byte_xor(cipher_bytestr)
     # print(decode)
     assert decode == b"Cooking MC's like a pound of bacon"
+
+
+def test_solve_set1_chall4():
+    with open('1-4.txt') as f:
+        # print(f.readlines())
+        for line in f.readlines():
+            # print(line)
+            plain = decode_single_byte_xor(line.encode())
+            print(plain)
