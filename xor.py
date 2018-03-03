@@ -59,6 +59,27 @@ def decode_single_byte_xor(cipherbytes):
     return scores[0].bytestr
 
 
+def decode_all_single_byte_xor(cipherbytes):
+    # print('Decoding cipherbytes:', len(cipherbytes), type(cipherbytes), cipherbytes)
+
+    # generate and score all possible single-byte xor results
+
+    scores = []
+    for x in range(256):
+        # print('decode for loop:', hex(x))
+        result = single_byte_xor(cipherbytes, bytes([x]))
+        # print('decode for loop: x:', x, 'result:', type(result), result)
+
+        scores.append(util.ScoredPlaintext(result))
+
+    # return the most probable result
+    scores.sort(key=lambda x: x.score, reverse=True)
+    # for sp in scores:
+    #     print(sp)
+
+    return scores
+
+
 def test_fixed_xor():
     hexstr = b'1c0111001f010100061a024b53535009181c'
     one = hexstr
@@ -86,9 +107,14 @@ def test_singlebyte_xor():
 
 
 def test_solve_set1_chall4():
+    all_plain = []
     with open('1-4.txt') as f:
         # print(f.readlines())
         for line in f.readlines():
             # print(line)
-            plain = decode_single_byte_xor(line.encode())
-            print(plain)
+            all_plain += decode_all_single_byte_xor(line.encode())
+        all_plain.sort(key=lambda x: x.score, reverse=True)
+
+        for i in range(200):
+            print(str(i) + ':', all_plain[i])
+        print(len(all_plain))

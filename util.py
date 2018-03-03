@@ -35,10 +35,27 @@ def test_groups():
 
 def plaintext_score(bytestr):
     '''
-    Quick and dirty scoring method that uses the most common english letters.
-    :param bytestr: Bytes to check
-    :return: Int score.
+        Quick and dirty scoring method that uses the most common english letters.
+        :param bytestr: Bytes to check
+        :return: Int score.
     '''
+    letter_frequency = b'ETAOIN SHRDLU'
+
+    # count frequency in bytestr
+    # score based on similarity to common frequency
+    score = 0
+    bytestr_upper = bytestr.upper()
+    for i, letter in enumerate(letter_frequency):
+        score += bytestr_upper.count(letter) * (15 - i)
+
+    if bytestr.count(b' ') < 5:
+        # print('NOT ENOUGH SPACES')
+        return 0
+
+    return score
+
+
+def plaintext_score_complex(bytestr):
 
     # print(bytestr)
     # print('len', len(bytestr))
@@ -46,21 +63,36 @@ def plaintext_score(bytestr):
     score = 0
 
     # weights
-    COMMON_WEIGHT = 1  # 3
+    COMMON_WEIGHT = 10  # 3
     PUNCTUATION_WEIGHT = 0  # 1
-    ISPRINTABLE_WEIGHT = 0  # 10
+    WEIRD_CHAR_PENALTY = -10
+    ISPRINTABLE_WEIGHT = 10  # 10
     UNICODEDECODEERROR_WEIGHT = 0  # -15
-    NO_SPACES_PENALTY = -10
-    COMMON_WORD_BONUS = 10
+    NO_SPACES_PENALTY = -2000
+    CONSECUTIVE_SPACES_PENALTY = -1000
+    COMMON_WORD_BONUS = 0
 
-    common_words = [b'the', b'an', b'and', b'or', b'for', b'you', b"'re"]
+    letter_frequency = b'ETAOIN SHRDLU'
+    common_words = [b'FLAG', b'THE', b'AND', b'OR', b'FOR', b'YOU', b"'RE"]
 
+    # print(bytestr)
     for byte in bytestr:
-        if bytes([byte]).upper() in b'ETAOIN SHRDLU':
-            score += COMMON_WEIGHT
 
-        if bytes([byte]).upper() in b',.?;:\'"/:!':
-            score += PUNCTUATION_WEIGHT
+        for i, char in enumerate(letter_frequency):
+            # print(byte, i, char)
+            if bytes([byte]).upper() == bytes([char]):
+                score += (len(letter_frequency) - i) * COMMON_WEIGHT
+                # print('got em')
+            # score += COMMON_WEIGHT
+
+        # if bytes([byte]).upper() in letter_frequency:
+        #     score += COMMON_WEIGHT
+
+        # if bytes([byte]) in b',.?;:\'"/:!':
+        #     score += PUNCTUATION_WEIGHT
+
+        if bytes([byte]) in br'\/#$%|<>=&':
+            score += WEIRD_CHAR_PENALTY
 
     try:
         if bytestr.decode().isprintable():
@@ -69,9 +101,14 @@ def plaintext_score(bytestr):
         if b' ' not in bytestr:
             score += NO_SPACES_PENALTY
 
+        if b'  ' in bytestr:
+            score += CONSECUTIVE_SPACES_PENALTY
+
         for word in common_words:
-            if word in bytestr:
+            if word.upper() in bytestr.upper():
                 score += COMMON_WORD_BONUS
+                # print("COMMON_WORD_BONUS", word)
+
     except UnicodeDecodeError:
         score -= UNICODEDECODEERROR_WEIGHT
 
