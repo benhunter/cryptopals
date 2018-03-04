@@ -82,11 +82,6 @@ def plaintext_score_complex(bytestr):
             # print(byte, i, char)
             if bytes([byte]).upper() == bytes([char]):
                 score += (len(letter_frequency) - i) * COMMON_WEIGHT
-                # print('got em')
-            # score += COMMON_WEIGHT
-
-        # if bytes([byte]).upper() in letter_frequency:
-        #     score += COMMON_WEIGHT
 
         # if bytes([byte]) in b',.?;:\'"/:!':
         #     score += PUNCTUATION_WEIGHT
@@ -119,7 +114,8 @@ def plaintext_score_complex(bytestr):
 class ScoredPlaintext(namedtuple('ScoredPlaintext', 'bytestr')):
     def __new__(cls, bytestr):
         self = super(ScoredPlaintext, cls).__new__(cls, bytestr)
-        self._score = plaintext_score(bytestr)
+        self._score = \
+            (bytestr)
         return self
 
     @property
