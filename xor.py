@@ -1,5 +1,11 @@
+# local code imports
+# library imports
+import pytest
+
 import util
 
+# Set True to print debug messages.
+DEBUG = False
 
 def fixed_xor(one, two):
     '''
@@ -29,57 +35,68 @@ def fixed_xor(one, two):
 
 
 def single_byte_xor(multiple_byte, single_byte):
-    # bytearray
-    # extended = single_byte * len(multiple_byte)
-
-    extended = b''.join(single_byte for i in range(len(multiple_byte)))
-
+    extended = single_byte * len(multiple_byte)
     # print('single_byte_xor len:', len(multiple_byte), 'extended:', len(extended), type(extended), extended)
     return fixed_xor(multiple_byte, extended)
 
 
 def decode_single_byte_xor(cipherbytes):
-    # print('Decoding cipherbytes:', len(cipherbytes), type(cipherbytes), cipherbytes)
-
-    # generate and score all possible single-byte xor results
-
-    scores = []
-    for x in range(256):
-        # print('decode for loop:', hex(x))
-        result = single_byte_xor(cipherbytes, bytes([x]))
-        # print('decode for loop: x:', x, 'result:', type(result), result)
-
-        scores.append(util.ScoredPlaintext(result))
-
-    # return the most probable result
-    scores.sort(key=lambda x: x.score, reverse=True)
-    # for sp in scores:
-    #     print(sp)
-
-    return scores[0].bytestr
+    decode_all_single_byte_xor(cipherbytes)[0]
 
 
 def decode_all_single_byte_xor(cipherbytes):
     # print('Decoding cipherbytes:', len(cipherbytes), type(cipherbytes), cipherbytes)
 
     # generate and score all possible single-byte xor results
-
     scores = []
     for x in range(256):
         # print('decode for loop:', hex(x))
         result = single_byte_xor(cipherbytes, bytes([x]))
         # print('decode for loop: x:', x, 'result:', type(result), result)
 
-        scores.append(util.ScoredPlaintext(result))
+        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex))
+        # Or use a different scoring function:
+        #   Such as: util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex)
 
     # return the most probable result
     scores.sort(key=lambda x: x.score, reverse=True)
-    # for sp in scores:
-    #     print(sp)
 
     return scores
 
 
+def expand_str(text, length):
+    return (text * (length // len(text) + 1))[:length]
+
+
+def repeating_key_xor(text, key):
+    return fixed_xor(text, expand_str(key, len(text)))
+
+
+def hamming_dist(strone, strtwo):
+    '''
+    Count the number of bits that differ between two bytestrings
+    :param strone:
+    :param strtwo:
+    :return:
+    '''
+    assert len(strone) == len(strtwo)
+
+    sum = 0
+    for i in range(len(strone)):
+        xored = strone[i] ^ strtwo[i]
+        diff = 0
+        while xored > 0:
+            if xored % 2 == 1:
+                diff += 1
+            xored = xored // 2
+        sum += diff
+        if DEBUG: print(strone, strtwo, strone[i], strtwo[i], diff, sum)
+
+    return sum
+
+
+########
+#  TESTS
 def test_fixed_xor():
     hexstr = b'1c0111001f010100061a024b53535009181c'
     one = hexstr
@@ -101,20 +118,61 @@ def test_singlebyte_xor():
     cipher_bytestr = util.hexbytes_to_bytestr(cipher_hex_bytes)
     # print('Test - cipher_bytestr:', cipher_bytestr)
 
-    decode = decode_single_byte_xor(cipher_bytestr)
+    decode = decode_all_single_byte_xor(cipher_bytestr)[0]
     # print(decode)
-    assert decode == b"Cooking MC's like a pound of bacon"
+    assert decode.bytestr == b"Cooking MC's like a pound of bacon"
 
 
+def test_expand_str():
+    assert expand_str('1', 10) == '1111111111'
+    assert expand_str(b'1', 10) == b'1111111111'
+    assert expand_str(b'12', 10) == b'1212121212'
+    assert expand_str(b'12', 11) == b'12121212121'
+
+
+def test_hamming_dist():
+    assert hamming_dist(b'', b'') == 0
+    assert hamming_dist(b'test', b'test') == 0
+    assert hamming_dist(b'a', b'b') == 2
+    assert hamming_dist(b'this is a test', b'wokka wokka!!!') == 37
+    with pytest.raises(TypeError):
+        assert hamming_dist('this is a test', 'wokka wokka!!!') == 37
+
+
+###########
+# SOLUTIONS
 def test_solve_set1_chall4():
     all_plain = []
-    with open('1-4.txt') as f:
-        # print(f.readlines())
+    top_plain = []
+    with open('4.txt') as f:
         for line in f.readlines():
-            # print(line)
-            all_plain += decode_all_single_byte_xor(line.encode())
-        all_plain.sort(key=lambda x: x.score, reverse=True)
+            if DEBUG: print(line)
+            converted = util.hexbytes_to_bytestr(line.strip().encode())
+            all_plain += decode_all_single_byte_xor(converted)
+            top_plain.append(decode_all_single_byte_xor(converted)[0])
 
-        for i in range(200):
+        all_plain.sort(key=lambda x: x.score, reverse=True)
+        top_plain.sort(key=lambda x: x.score, reverse=True)
+
+        print("Place : Result (all decoded scores)")
+        for i in range(10):
             print(str(i) + ':', all_plain[i])
-        print(len(all_plain))
+
+        print("Place : Result (top decoded scores)")
+        for i in range(10):
+            print(str(i) + ':', top_plain[i])
+
+    assert all_plain[0].bytestr == b'Now that the party is jumping\n'
+    assert top_plain[0].bytestr == b'Now that the party is jumping\n'
+
+
+def test_solve_chall5():
+    answer = repeating_key_xor(b'Burning \'em, if you ain\'t quick and nimble\nI go crazy when I hear a cymbal', b'ICE')
+    # print(answer)
+    # print(util.bytestr_to_hexbytes(answer))
+    assert util.bytestr_to_hexbytes(
+        answer) == b'0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f'
+
+
+def test_solve_chall6():
+    pass
