@@ -17,6 +17,11 @@ base64_table = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
 
 
 def bytes_to_base64(data):
+    '''
+
+    :param data: Bytestring
+    :return:
+    '''
     # print('input', data)
 
     b64 = ''
@@ -127,6 +132,15 @@ def bytes_to_base64_original(data):
         b64 += base64_table[r3]
 
     return b64
+
+
+def base64_to_bytes(data):
+    '''
+    TODO
+    :param data:
+    :return:
+    '''
+    return
 
 
 def test_hex_to_base64():

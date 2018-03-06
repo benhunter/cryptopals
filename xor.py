@@ -1,7 +1,13 @@
-# local code imports
+# standard library imports
+import statistics
+from collections import namedtuple
+from pprint import pprint
+
 # library imports
 import pytest
 
+import base_64
+# local code imports
 import util
 
 # Set True to print debug messages.
@@ -54,7 +60,8 @@ def decode_all_single_byte_xor(cipherbytes):
         result = single_byte_xor(cipherbytes, bytes([x]))
         # print('decode for loop: x:', x, 'result:', type(result), result)
 
-        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex))
+        # scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex))
+        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score))
         # Or use a different scoring function:
         #   Such as: util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex)
 
@@ -72,27 +79,71 @@ def repeating_key_xor(text, key):
     return fixed_xor(text, expand_str(key, len(text)))
 
 
-def hamming_dist(strone, strtwo):
+def hamming_dist(str_one, str_two):
     '''
-    Count the number of bits that differ between two bytestrings
-    :param strone:
-    :param strtwo:
+    Count the number of bits that differ between two bytestrings.
+    :param str_one:
+    :param str_two:
     :return:
     '''
-    assert len(strone) == len(strtwo)
+    assert len(str_one) == len(str_two)
 
     sum = 0
-    for i in range(len(strone)):
-        xored = strone[i] ^ strtwo[i]
+    for i in range(len(str_one)):
+        xored = str_one[i] ^ str_two[i]
         diff = 0
         while xored > 0:
             if xored % 2 == 1:
                 diff += 1
             xored = xored // 2
         sum += diff
-        if DEBUG: print(strone, strtwo, strone[i], strtwo[i], diff, sum)
+        if DEBUG: print(str_one, str_two, str_one[i], str_two[i], diff, sum)
 
     return sum
+
+
+def find_xor_key_length(cipher, KEYSIZE_MIN, KEYSIZE_MAX, NUM_BLOCKS):
+    '''
+
+
+    :param cipher:
+    :param KEYSIZE_MIN:
+    :param KEYSIZE_MAX:
+    :return: Length of xor key size with lowest average hamming distance.
+    '''
+
+    assert KEYSIZE_MIN < KEYSIZE_MAX
+
+    # find edit/hamming distance
+    # hammdist(block1, block2) / KEYSIZE
+    #  or  statistics.mean(all_hammdist(block1, 2, 3, 4) / KEYSIZE
+    # minimum hammdist of all tested KEYSIZES is most likely key length
+
+    distances = []
+    KeyLengthTuple = namedtuple('KeyLengthTuple', 'key_len hamming_dist')
+    for keylen in range(KEYSIZE_MIN, KEYSIZE_MAX + 1):
+        blocks = []
+        # TODO rewrite as list comprehension
+        for i in range(NUM_BLOCKS):
+            blocks.append(cipher[i * keylen:(i + 1) * keylen])  # 0:keysize, keysize:keysize+keysize,
+        print(blocks)
+
+        block_hamm_dists = []
+        for i in range(len(blocks) - 1):
+            block_hamm_dists.append(hamming_dist(blocks[i], blocks[i + 1]))
+
+        dist = statistics.mean(block_hamm_dists) / keylen
+        distances.append(KeyLengthTuple(keylen, dist))
+
+    def key(keylengthtuple):
+        return (keylengthtuple.hamming_dist)
+
+    distances = sorted(distances, key=key)
+    pprint(distances)
+
+    print(min(distances, key=key))
+    return min(distances, key=key).key_len
+
 
 
 ########
@@ -139,6 +190,11 @@ def test_hamming_dist():
         assert hamming_dist('this is a test', 'wokka wokka!!!') == 37
 
 
+# TODO
+def test_find_xor_key_length():
+    print('find_xor_key_length', find_xor_key_length())
+
+
 ###########
 # SOLUTIONS
 def test_solve_set1_chall4():
@@ -175,4 +231,58 @@ def test_solve_chall5():
 
 
 def test_solve_chall6():
-    pass
+    '''
+    1) Let KEYSIZE be the guessed length of the key; try values from 2 to (say) 40.
+
+    2) Write a function to compute the edit distance/Hamming distance between two strings. The Hamming distance is just
+    the number of differing bits. The distance between:
+        this is a test
+        and
+        wokka wokka!!!
+        is 37. Make sure your code agrees before you proceed.
+
+    3) For each KEYSIZE, take the first KEYSIZE worth of bytes, and the second KEYSIZE worth of bytes, and find the edit
+    distance between them. Normalize this result by dividing by KEYSIZE.
+
+    4) The KEYSIZE with the smallest normalized edit distance is probably the key. You could proceed perhaps with the smallest 2-3 KEYSIZE values. Or take 4 KEYSIZE blocks instead of 2 and average the distances.
+
+    5) Now that you probably know the KEYSIZE: break the ciphertext into blocks of KEYSIZE length.
+
+    6) Now transpose the blocks: make a block that is the first byte of every block, and a block that is the second byte of every block, and so on.
+
+    7) Solve each block as if it was single-character XOR. You already have code to do this.
+
+    8) For each block, the single-byte XOR key that produces the best looking histogram is the repeating-key XOR key byte for that block. Put them together and you have the key.
+    '''
+
+    KEYSIZE_RANGE_MIN = 2  # Inclusive range of possible key sizes to search
+    KEYSIZE_RANGE_MAX = 40
+    NUMBER_OF_BLOCKS = 4  # TODO 2, 4 also suggested. 6 jumps to 20.
+
+    with open('6.txt') as f:
+        ciphers = [x.rstrip('\n').encode() for x in f.readlines()]
+        # ciphers = ''.join(f.readlines()).encode()  # TODO should newlines be included here? they are part of the file...
+        print(ciphers)
+        print()
+
+        # Un-Base64
+        for line in ciphers:
+            line = base_64.base64_to_bytes(line)
+        print(ciphers)
+
+        # likely_xor_key_length = find_xor_key_length(cipher, KEYSIZE_RANGE_MIN, KEYSIZE_RANGE_MAX, NUMBER_OF_BLOCKS)
+        # print(likely_xor_key_length)
+        #
+        # transposed = [bytearray(b'') for i in range(likely_xor_key_length)]
+        # for block in util.groups(cipher, likely_xor_key_length):
+        #     for position in range(likely_xor_key_length):
+        #         transposed[position].append(block[position])
+        # pprint(transposed)
+        # print(transposed)
+        # print(len(transposed))
+        # print(transposed[0])
+        # print(len(transposed[0]))
+        #
+        # for transposed_block in transposed:
+        #     print('decoding block:', transposed_block)
+        #     # print('decoding result:', decode_all_single_byte_xor(transposed_block))
