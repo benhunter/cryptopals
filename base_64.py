@@ -140,9 +140,16 @@ def base64_to_bytes(data):
     :param data:
     :return:
     '''
+
+    assert type(data) == 'byte'
+
+    for quad in groups(data):
+
     return
 
 
+#######
+# TESTS
 def test_hex_to_base64():
     '''
     Tests that work with pytest and Nosetest test frameworks.
@@ -186,6 +193,8 @@ def test_hex_to_base64():
     # hexlify output test
     print('hexlify output type:', type(binascii.hexlify(unhex)))
 
+
+def test_base64_to_hex()
 
 # Base64 Table
 ''' Base64 Table
