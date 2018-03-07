@@ -6,8 +6,8 @@ from itertools import zip_longest
 # library imports
 import pytest
 
-import base_64
 # local code imports
+import base_64
 import util
 
 # Set True to print debug messages.

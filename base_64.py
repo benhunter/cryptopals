@@ -5,10 +5,11 @@
 import base64
 import binascii
 
+from util import groups, hexbytes_to_bytestr
+
 # Table of base64 values. Each index in the list is the int equal to the character in that position.
 # base64_table[64] is the default padding character, '='
 # To use alternate base64 charaters, change base64_table[62] and base64_table[63]
-from util import groups, hexbytes_to_bytestr
 
 base64_table = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
                 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
