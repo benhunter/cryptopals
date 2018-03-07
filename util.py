@@ -6,7 +6,7 @@ from collections import namedtuple
 # external library imports
 
 # Set True to print logs
-DEBUG = True
+DEBUG = False
 
 # letter_frequency = b'ETAOIN SHRDLU'
 letter_frequency = {
@@ -73,10 +73,10 @@ def plaintext_score(bytestr):
     for i, letter in enumerate(letter_frequency.keys()):
         score += bytestr_upper.count(letter) * letter_frequency[letter]
 
-    if bytestr.count(b' ') < 5:
-        # print('NOT ENOUGH SPACES')
-        # return 0
-        pass
+    # if bytestr.count(b' ') < 5:
+    #     # print('NOT ENOUGH SPACES')
+    #     # return 0
+    #     pass
 
     return score
 
@@ -204,7 +204,7 @@ class ScoredPlaintext(namedtuple('ScoredPlaintext', 'bytestr')):
         return self._score
 
     def __str__(self):
-        return "ScoredPlaintext: " + str(self.bytestr) + "\tScore: " + str(self.score)
+        return "ScoredPlaintext: Score: " + str(self.score) + "\tBytestring: " + str(self.bytestr)
 
 
 ########
@@ -216,6 +216,13 @@ def test_groups():
 
     pair_list = [pairs for pairs in groups(data, 2)]
     assert pair_list == ['ab', 'cd', 'e']
+
+    data = b'abcde'
+    for pair in groups(data, 2):
+        print(pair)
+
+    pair_list = [pairs for pairs in groups(data, 2)]
+    assert pair_list == [b'ab', b'cd', b'e']
 
 
 def test_ScoredPlaintext():

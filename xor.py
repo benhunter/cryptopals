@@ -1,7 +1,7 @@
 # standard library imports
 import statistics
 from collections import namedtuple
-from pprint import pprint
+from itertools import zip_longest
 
 # library imports
 import pytest
@@ -126,10 +126,11 @@ def find_xor_key_length(cipher, KEYSIZE_MIN, KEYSIZE_MAX, NUM_BLOCKS):
         # TODO rewrite as list comprehension
         for i in range(NUM_BLOCKS):
             blocks.append(cipher[i * keylen:(i + 1) * keylen])  # 0:keysize, keysize:keysize+keysize,
-        print(blocks)
+        # print(blocks)
 
         block_hamm_dists = []
         for i in range(len(blocks) - 1):
+            # print('hamming:', blocks[i], blocks[i + 1])
             block_hamm_dists.append(hamming_dist(blocks[i], blocks[i + 1]))
 
         dist = statistics.mean(block_hamm_dists) / keylen
@@ -139,9 +140,9 @@ def find_xor_key_length(cipher, KEYSIZE_MIN, KEYSIZE_MAX, NUM_BLOCKS):
         return (keylengthtuple.hamming_dist)
 
     distances = sorted(distances, key=key)
-    pprint(distances)
+    # pprint(distances)
 
-    print(min(distances, key=key))
+    # print(min(distances, key=key))
     return min(distances, key=key).key_len
 
 
@@ -260,29 +261,45 @@ def test_solve_chall6():
     NUMBER_OF_BLOCKS = 4  # TODO 2, 4 also suggested. 6 jumps to 20.
 
     with open('6.txt') as f:
-        ciphers = [x.rstrip('\n').encode() for x in f.readlines()]
-        # ciphers = ''.join(f.readlines()).encode()  # TODO should newlines be included here? they are part of the file...
-        print(ciphers)
-        print()
+        cipher = [x.rstrip('\n').encode() for x in f.readlines()]
+        # print(cipher)
+        # print()
 
-        # Un-Base64
-        for line in ciphers:
-            line = base_64.base64_to_bytes(line)
-        print(ciphers)
+        # TODO is this really one big string????
+        cipher = b''.join(cipher)
+        # Un-Base64 AFTER joining, not before
+        cipher = base_64.base64_to_bytes(cipher)
+        # print(cipher, len(cipher))
 
-        # likely_xor_key_length = find_xor_key_length(cipher, KEYSIZE_RANGE_MIN, KEYSIZE_RANGE_MAX, NUMBER_OF_BLOCKS)
-        # print(likely_xor_key_length)
-        #
-        # transposed = [bytearray(b'') for i in range(likely_xor_key_length)]
-        # for block in util.groups(cipher, likely_xor_key_length):
-        #     for position in range(likely_xor_key_length):
-        #         transposed[position].append(block[position])
+        # for cipher in cipher:
+
+        likely_xor_key_length = find_xor_key_length(cipher, KEYSIZE_RANGE_MIN, KEYSIZE_RANGE_MAX, NUMBER_OF_BLOCKS)
+        print('likely_xor_key_length', likely_xor_key_length)
+
+        transposed = [bytearray(b'') for i in range(likely_xor_key_length)]
+        for block in util.groups(cipher, likely_xor_key_length):
+            if len(block) < likely_xor_key_length:
+                continue
+            for position in range(likely_xor_key_length):
+                transposed[position].append(block[position])
         # pprint(transposed)
         # print(transposed)
         # print(len(transposed))
-        # print(transposed[0])
-        # print(len(transposed[0]))
-        #
-        # for transposed_block in transposed:
-        #     print('decoding block:', transposed_block)
-        #     # print('decoding result:', decode_all_single_byte_xor(transposed_block))
+
+        xor_decoded = []
+        for transposed_block in transposed:
+            # print('decoding block:', transposed_block)
+            xor_decoded.append(decode_all_single_byte_xor(transposed_block)[0].bytestr)
+            print('decoding result:', xor_decoded)
+
+        # pprint(xor_decoded)
+
+        # de-transpose
+        # pprint(list(zip_longest(*xor_decoded)))
+
+        result = bytearray()
+        for bytes in zip_longest(*xor_decoded):
+            print(bytes, type(bytes))
+            for b in bytes:
+                result.append(b)
+        print(result, len(result))

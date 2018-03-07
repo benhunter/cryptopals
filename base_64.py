@@ -134,18 +134,53 @@ def bytes_to_base64_original(data):
     return b64
 
 
-def base64_to_bytes(data):
+def base64_to_bytes(b64data):
     '''
-    TODO
-    :param data:
+    Decode Base64 bytestring to bytestring.
+    One base64 digit is six bits of data.
+    :param b64data:
     :return:
     '''
 
-    assert type(data) == 'byte'
+    assert isinstance(b64data, bytes)
 
-    for quad in groups(data):
+    decoded = bytearray()
 
-    return
+    for quad in groups(b64data, 4):
+        # print(quad, 'len(quad)', len(quad))
+
+        # 6 high bits (00111111), 2 low bits (00110000)
+        triplet_1 = (base64_table.index(chr(quad[0])) << 2) + (base64_table.index(chr(quad[1])) >> 4)
+        decoded.append(triplet_1)
+        # print('triplet_1:', triplet_1)
+
+        if quad[2] == ord('='):
+            # print('quad[2] is =')
+            # 4 high bits (00001111), 0 low bits (00000000)
+            triplet_2 = ((base64_table.index(chr(quad[1])) & 0b00001111) << 4)
+        else:
+            # 4 high bits (00001111), 4 low bits (00111100)
+            triplet_2 = ((base64_table.index(chr(quad[1])) & 0b00001111) << 4) + (base64_table.index(chr(quad[2])) >> 2)
+        if triplet_2 != 0:
+            decoded.append(triplet_2)
+        # print('triplet_2:', triplet_2)
+
+        # 2 high bits (00000011), 6 low bits (00111111)
+        if quad[3] == ord('='):
+            # print('quad[3] is =')
+            # triplet_3 = None
+            pass
+        else:
+            triplet_3 = ((base64_table.index(chr(quad[2])) & 0b00000011) << 6) + base64_table.index(chr(quad[3]))
+            decoded.append(triplet_3)
+            # print('triplet_3:', triplet_3)
+
+        # print(triplet_1, triplet_2, triplet_3)
+        # print(chr(triplet_1), chr(triplet_2), chr(triplet_3))
+
+        # print('decoded:', decoded)
+
+    return bytes(decoded)
 
 
 #######
@@ -194,7 +229,12 @@ def test_hex_to_base64():
     print('hexlify output type:', type(binascii.hexlify(unhex)))
 
 
-def test_base64_to_hex()
+def test_base64_to_hex():
+    print(base64_to_bytes(b'aaaa'))
+    print(base64_to_bytes(b'VGhpcyBpcyBvbmx5IGEgdGVz'))  # 'This is only a tes'
+    print(base64_to_bytes(b'VGhpcyBpcyBvbmx5IGEgdGVzdA=='))  # 'This is only a test'
+    print(base64_to_bytes(b'VEhJUyBJUyBPTkxZIEEgVEVTVA=='))  # 'THIS IS ONLY A TEST'
+    print(base64_to_bytes(b'VGhpcyBJcyBPbmw='))  # 'This Is Onl'
 
 # Base64 Table
 ''' Base64 Table
