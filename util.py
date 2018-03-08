@@ -59,9 +59,9 @@ def bytestr_to_hexbytes(bytestr):
 
 def plaintext_score(bytestr):
     '''
-        Quick and dirty scoring method that uses the most common english letters.
-        :param bytestr: Bytes to check
-        :return: Int score.
+    Quick and dirty scoring method that uses the most common english letters.
+    :param bytestr: Bytes to check
+    :return: Int score.
     '''
 
 
@@ -174,6 +174,25 @@ def plaintext_score_dict(bytestr):
 
     # print('score', score)
     return score
+
+
+def plaintext_score_historgram(bytestr):
+    '''
+    Stack percentages of each character. Closest to normal histogram wins.
+    :param bytestr:
+    :return:
+    '''
+    return 0
+
+
+def plaintext_score_diff_from_norm(bytes):
+    '''
+    Count the percentage points from normal for each alphabet character.
+    TODO Golf score? Or invert to make a %?
+    :param bytes:
+    :return:
+    '''
+    return 0
 
 
 def load_dict(file):

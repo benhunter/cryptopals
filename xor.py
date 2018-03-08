@@ -137,7 +137,7 @@ def find_xor_key_length(cipher, KEYSIZE_MIN, KEYSIZE_MAX, NUM_BLOCKS):
         distances.append(KeyLengthTuple(keylen, dist))
 
     def key(keylengthtuple):
-        return (keylengthtuple.hamming_dist)
+        return keylengthtuple.hamming_dist
 
     distances = sorted(distances, key=key)
     # pprint(distances)
