@@ -9,7 +9,40 @@ from collections import namedtuple
 DEBUG = False
 
 # letter_frequency = b'ETAOIN SHRDLU'
-letter_frequency = {
+'''
+http://norvig.com/mayzner.html
+letter %
+'''
+letter_freq = {
+    b'E': 12.49,
+    b'T': 9.28,
+    b'A': 8.04,
+    b'O': 7.64,
+    b'I': 7.57,
+    b'N': 7.23,
+    b'S': 6.51,
+    b'R': 6.28,
+    b'H': 5.05,
+    b'L': 4.07,
+    b'D': 3.82,
+    b'C': 3.34,
+    b'U': 2.73,
+    b'M': 2.51,
+    b'F': 2.40,
+    b'P': 2.14,
+    b'G': 1.87,
+    b'W': 1.68,
+    b'Y': 1.66,
+    b'B': 1.48,
+    b'V': 1.05,
+    b'K': 0.54,
+    b'X': 0.23,
+    b'J': 0.16,
+    b'Q': 0.12,
+    b'Z': 0.09
+}
+
+letter_table = {
     b'E': 15,
     b'T': 14,
     b'A': 13,
@@ -70,8 +103,8 @@ def plaintext_score(bytestr):
     score = 0
     bytestr_upper = bytestr.upper()
 
-    for i, letter in enumerate(letter_frequency.keys()):
-        score += bytestr_upper.count(letter) * letter_frequency[letter]
+    for i, letter in enumerate(letter_table.keys()):
+        score += bytestr_upper.count(letter) * letter_table[letter]
 
     # if bytestr.count(b' ') < 5:
     #     # print('NOT ENOUGH SPACES')
@@ -102,8 +135,8 @@ def plaintext_score_complex(bytestr):
 
     bytestr_upper = bytestr.upper()
 
-    for i, letter in enumerate(letter_frequency.keys()):
-        score += bytestr_upper.count(letter) * letter_frequency[letter]
+    for i, letter in enumerate(letter_table.keys()):
+        score += bytestr_upper.count(letter) * letter_table[letter]
 
     # print(bytestr)
     for byte in bytestr:
