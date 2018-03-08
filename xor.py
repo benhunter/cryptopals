@@ -1,13 +1,14 @@
 # standard library imports
+import base64  # Only for testing against base_64
 import statistics
 from collections import namedtuple
 from itertools import zip_longest
+from pprint import pprint
 
 # library imports
 import pytest
 
 # local code imports
-import base_64
 import util
 
 # Set True to print debug messages.
@@ -61,7 +62,7 @@ def decode_all_single_byte_xor(cipherbytes):
         # print('decode for loop: x:', x, 'result:', type(result), result)
 
         # scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex))
-        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score))
+        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_diff_from_norm))
         # Or use a different scoring function:
         #   Such as: util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex)
 
@@ -140,7 +141,7 @@ def find_xor_key_length(cipher, KEYSIZE_MIN, KEYSIZE_MAX, NUM_BLOCKS):
         return keylengthtuple.hamming_dist
 
     distances = sorted(distances, key=key)
-    # pprint(distances)
+    pprint(distances)
 
     # print(min(distances, key=key))
     return min(distances, key=key).key_len
@@ -258,18 +259,23 @@ def test_solve_chall6():
 
     KEYSIZE_RANGE_MIN = 2  # Inclusive range of possible key sizes to search
     KEYSIZE_RANGE_MAX = 40
-    NUMBER_OF_BLOCKS = 4  # TODO 2, 4 also suggested. 6 jumps to 20.
+    NUMBER_OF_BLOCKS = 16  # TODO 2, 4 also suggested.
 
     with open('6.txt') as f:
-        cipher = [x.rstrip('\n').encode() for x in f.readlines()]
+        # cipher_b64 = b''.join([x.rstrip('\n').encode() for x in f.readlines()])
+        cipher_b64_str = ''.join([x.rstrip('\n') for x in f.readlines()])
+        cipher_b64 = cipher_b64_str.encode()
         # print(cipher)
         # print()
 
         # TODO is this really one big string????
-        cipher = b''.join(cipher)
+
         # Un-Base64 AFTER joining, not before
-        cipher = base_64.base64_to_bytes(cipher)
-        # print(cipher, len(cipher))
+        # cipher = base_64.base64_to_bytes(cipher_b64) # TODO doesn't match base64 result
+        cipher = base64.b64decode(cipher_b64_str)
+        print()
+        print(cipher, len(cipher))
+        # print(cipher2, len(cipher2))
 
         # for cipher in cipher:
 
@@ -283,23 +289,27 @@ def test_solve_chall6():
             for position in range(likely_xor_key_length):
                 transposed[position].append(block[position])
         # pprint(transposed)
-        # print(transposed)
         # print(len(transposed))
 
         xor_decoded = []
-        for transposed_block in transposed:
+        for index, transposed_block in enumerate(transposed):
             # print('decoding block:', transposed_block)
-            xor_decoded.append(decode_all_single_byte_xor(transposed_block)[0].bytestr)
-            print('decoding result:', xor_decoded)
+
+            # TODO look at the decode results and scores
+
+            decoded = decode_all_single_byte_xor(transposed_block)
+
+            xor_decoded.append(decoded[0])
+            print(index, 'decoding result:', xor_decoded[index])
 
         # pprint(xor_decoded)
 
         # de-transpose
-        # pprint(list(zip_longest(*xor_decoded)))
+        pprint(list(zip_longest(*xor_decoded)))
 
         result = bytearray()
         for bytes in zip_longest(*xor_decoded):
-            print(bytes, type(bytes))
+            # print(bytes, type(bytes))
             for b in bytes:
                 result.append(b)
         print(result, len(result))

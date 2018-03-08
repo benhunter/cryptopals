@@ -11,35 +11,36 @@ DEBUG = False
 # letter_frequency = b'ETAOIN SHRDLU'
 '''
 http://norvig.com/mayzner.html
+TODO Need to include space. 
 letter %
 '''
 letter_freq = {
-    b'E': 12.49,
-    b'T': 9.28,
-    b'A': 8.04,
-    b'O': 7.64,
-    b'I': 7.57,
-    b'N': 7.23,
-    b'S': 6.51,
-    b'R': 6.28,
-    b'H': 5.05,
-    b'L': 4.07,
-    b'D': 3.82,
-    b'C': 3.34,
-    b'U': 2.73,
-    b'M': 2.51,
-    b'F': 2.40,
-    b'P': 2.14,
-    b'G': 1.87,
-    b'W': 1.68,
-    b'Y': 1.66,
-    b'B': 1.48,
-    b'V': 1.05,
-    b'K': 0.54,
-    b'X': 0.23,
-    b'J': 0.16,
-    b'Q': 0.12,
-    b'Z': 0.09
+    b'E': 0.1249,
+    b'T': 0.0928,
+    b'A': 0.0804,
+    b'O': 0.0764,
+    b'I': 0.0757,
+    b'N': 0.0723,
+    b'S': 0.0651,
+    b'R': 0.0628,
+    b'H': 0.0505,
+    b'L': 0.0407,
+    b'D': 0.0382,
+    b'C': 0.0334,
+    b'U': 0.0273,
+    b'M': 0.0251,
+    b'F': 0.0240,
+    b'P': 0.0214,
+    b'G': 0.0187,
+    b'W': 0.0168,
+    b'Y': 0.0166,
+    b'B': 0.0148,
+    b'V': 0.0105,
+    b'K': 0.0054,
+    b'X': 0.0023,
+    b'J': 0.0016,
+    b'Q': 0.0012,
+    b'Z': 0.0009
 }
 
 letter_table = {
@@ -182,6 +183,9 @@ def plaintext_score_dict(bytestr):
     if DEBUG: print(bytestr)
     if DEBUG: print('len', len(bytestr))
 
+    # List loaded from file of dictionary words
+    global word_set
+
     # Load the dictionary into memory if it hasn't already been done.
     if not word_set:
         load_dict(DICTIONARY_FILE)
@@ -192,8 +196,6 @@ def plaintext_score_dict(bytestr):
     WORD_BONUS = 1
     UNICODEDECODEERROR_WEIGHT = 0
 
-    # List loaded from file of dictionary words
-    global word_set
 
     try:
         for word in bytestr.split(b' '):
@@ -215,17 +217,44 @@ def plaintext_score_historgram(bytestr):
     :param bytestr:
     :return:
     '''
+    # TODO
     return 0
 
 
-def plaintext_score_diff_from_norm(bytes):
+def plaintext_score_diff_from_norm(bytestr):
     '''
     Count the percentage points from normal for each alphabet character.
     TODO Golf score? Or invert to make a %?
     :param bytes:
     :return:
     '''
-    return 0
+
+    this_letter_freq = letter_freq
+
+    score = 0
+
+    for char in letter_freq.keys():
+        # print(char, type(char))
+        # print(bytestr.upper().count(char))
+        # print(bytestr.upper().count(char) / len(bytestr))
+        # this_letter_freq[char] = bytestr.upper().count(char) / len(bytestr)
+
+        score += abs(letter_freq[char] - (bytestr.upper().count(char) / len(bytestr)))
+
+    # pprint(this_letter_freq)
+    # sorted_freq = OrderedDict(sorted(this_letter_freq.items(), key=lambda x: x[1], reverse=True))
+    # pprint(sorted_freq)
+
+    try:
+        if not bytestr.decode().isprintable():
+            return 0
+    except UnicodeDecodeError:
+        return 0
+
+    if score == 0:
+        return 0
+
+    return 100 / score
 
 
 def load_dict(file):
@@ -246,7 +275,7 @@ def load_dict(file):
 
 
 class ScoredPlaintext(namedtuple('ScoredPlaintext', 'bytestr')):
-    def __new__(cls, bytestr, scoring_func=plaintext_score):
+    def __new__(cls, bytestr, scoring_func=plaintext_score_diff_from_norm):
         self = super(ScoredPlaintext, cls).__new__(cls, bytestr)
         self._score = scoring_func(bytestr)
         return self
@@ -290,8 +319,16 @@ def test_ScoredPlaintext():
         b'\x0b\n\x0bZ\x0fZ\t_\x0bY\x0b\x02\t\r\x0b\x03\t_\t]\n\x0e\t\x0e\x0e\r\t_\n_\x0b\x0c\x0bZ\x0cZ\x0b\x03\n\x0e\t]\x0eY\x0f\x0f\x08\x03Z\x0f\n\x0e\x0bY\n\x08\t^\t\x0b1'))
 
 
+def test_ScoredPlaintext_diff_from_norm():
+    print(ScoredPlaintext(b'test test test', scoring_func=plaintext_score_diff_from_norm))
+    print(ScoredPlaintext(b'This is only a test.', scoring_func=plaintext_score_diff_from_norm))
+    print(ScoredPlaintext(
+        b'In addition to the usual mapping methods, ordered dictionaries also support reverse iteration using reversed().',
+        scoring_func=plaintext_score_diff_from_norm))
+
+
 def test_load_dict():
-    # load_dict(DICTIONARY_FILE)
+    load_dict(DICTIONARY_FILE)
     # print(word_set)
     assert plaintext_score_dict(b'this is only a test') == 5
     assert 'test' in word_set
