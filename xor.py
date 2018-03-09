@@ -259,7 +259,7 @@ def test_solve_chall6():
 
     KEYSIZE_RANGE_MIN = 2  # Inclusive range of possible key sizes to search
     KEYSIZE_RANGE_MAX = 40
-    NUMBER_OF_BLOCKS = 16  # TODO 2, 4 also suggested.
+    NUMBER_OF_BLOCKS = 6  # TODO 2, 4 also suggested.
 
     with open('6.txt') as f:
         # cipher_b64 = b''.join([x.rstrip('\n').encode() for x in f.readlines()])
@@ -280,6 +280,7 @@ def test_solve_chall6():
         # for cipher in cipher:
 
         likely_xor_key_length = find_xor_key_length(cipher, KEYSIZE_RANGE_MIN, KEYSIZE_RANGE_MAX, NUMBER_OF_BLOCKS)
+        likely_xor_key_length = 5
         print('likely_xor_key_length', likely_xor_key_length)
 
         transposed = [bytearray(b'') for i in range(likely_xor_key_length)]
