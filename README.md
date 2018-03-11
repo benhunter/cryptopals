@@ -6,4 +6,5 @@ Always operate on raw bytes, never on encoded strings. Only use hex and base64 f
 ## TODO:
 - https://pypi.python.org/pypi/pycryptodomex
 - https://github.com/yuvadm/matasano-cryptopals
+- https://github.com/akalin/cryptopals-python3
 
