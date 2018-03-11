@@ -2,8 +2,7 @@
 import base64  # Only for testing against base_64
 import statistics
 from collections import namedtuple
-from itertools import zip_longest
-from pprint import pprint
+from itertools import zip_longest, combinations
 
 # library imports
 import pytest
@@ -62,7 +61,7 @@ def decode_all_single_byte_xor(cipherbytes):
         # print('decode for loop: x:', x, 'result:', type(result), result)
 
         # scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex))
-        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_diff_from_norm))
+        scores.append(util.ScoredPlaintext(result, scoring_func=util.plaintext_score_diff_from_norm, key=x))
         # Or use a different scoring function:
         #   Such as: util.ScoredPlaintext(result, scoring_func=util.plaintext_score_complex)
 
@@ -130,18 +129,20 @@ def find_xor_key_length(cipher, KEYSIZE_MIN, KEYSIZE_MAX, NUM_BLOCKS):
         # print(blocks)
 
         block_hamm_dists = []
-        for i in range(len(blocks) - 1):
+        # for i in range(len(blocks) - 1):
             # print('hamming:', blocks[i], blocks[i + 1])
-            block_hamm_dists.append(hamming_dist(blocks[i], blocks[i + 1]))
+        # block_hamm_dists.append(hamming_dist(blocks[i], blocks[i + 1]))
+        for pair in combinations(blocks, 2):
+            block_hamm_dists.append(hamming_dist(pair[0], pair[1]) / keylen)
 
-        dist = statistics.mean(block_hamm_dists) / keylen
+        dist = statistics.mean(block_hamm_dists)
         distances.append(KeyLengthTuple(keylen, dist))
 
     def key(keylengthtuple):
         return keylengthtuple.hamming_dist
 
     distances = sorted(distances, key=key)
-    pprint(distances)
+    # pprint(distances)
 
     # print(min(distances, key=key))
     return min(distances, key=key).key_len
@@ -259,7 +260,7 @@ def test_solve_chall6():
 
     KEYSIZE_RANGE_MIN = 2  # Inclusive range of possible key sizes to search
     KEYSIZE_RANGE_MAX = 40
-    NUMBER_OF_BLOCKS = 6  # TODO 2, 4 also suggested.
+    NUMBER_OF_BLOCKS = 4  # TODO 2, 4 also suggested.
 
     with open('6.txt') as f:
         # cipher_b64 = b''.join([x.rstrip('\n').encode() for x in f.readlines()])
@@ -274,13 +275,12 @@ def test_solve_chall6():
         # cipher = base_64.base64_to_bytes(cipher_b64) # TODO doesn't match base64 result
         cipher = base64.b64decode(cipher_b64_str)
         print()
-        print(cipher, len(cipher))
+        # print(cipher, len(cipher))
         # print(cipher2, len(cipher2))
 
         # for cipher in cipher:
 
         likely_xor_key_length = find_xor_key_length(cipher, KEYSIZE_RANGE_MIN, KEYSIZE_RANGE_MAX, NUMBER_OF_BLOCKS)
-        likely_xor_key_length = 5
         print('likely_xor_key_length', likely_xor_key_length)
 
         transposed = [bytearray(b'') for i in range(likely_xor_key_length)]
@@ -296,21 +296,28 @@ def test_solve_chall6():
         for index, transposed_block in enumerate(transposed):
             # print('decoding block:', transposed_block)
 
-            # TODO look at the decode results and scores
-
+            # look at the decode results and scores
             decoded = decode_all_single_byte_xor(transposed_block)
 
             xor_decoded.append(decoded[0])
-            print(index, 'decoding result:', xor_decoded[index])
+            # print(index, 'decoding result:', xor_decoded[index])
 
         # pprint(xor_decoded)
 
-        # de-transpose
-        pprint(list(zip_longest(*xor_decoded)))
+        xor_decoded_bytes = [sp.bytestr for sp in xor_decoded]
+        key = [sp.key() for sp in xor_decoded]
+        print(bytes(key))
 
+        # de-transpose
         result = bytearray()
-        for bytes in zip_longest(*xor_decoded):
-            # print(bytes, type(bytes))
-            for b in bytes:
-                result.append(b)
-        print(result, len(result))
+        for byte in zip_longest(*xor_decoded_bytes):
+            # print(byte, type(byte))
+            for b in byte:
+                if b:
+                    # print(b)
+                    result.append(b)
+        # print(result, len(result))
+        # print(bytes(result).decode(), len(result))
+
+        # also, instead of detransposing, xor original text with the key
+        print(repeating_key_xor(cipher, key))

@@ -245,16 +245,22 @@ def plaintext_score_diff_from_norm(bytestr):
     # sorted_freq = OrderedDict(sorted(this_letter_freq.items(), key=lambda x: x[1], reverse=True))
     # pprint(sorted_freq)
 
-    try:
-        if not bytestr.decode().isprintable():
-            return 0
-    except UnicodeDecodeError:
-        return 0
+    punctuation_boost = 0
+    punctuation_set = b'\'.,;?!'
+    for punc in punctuation_set:
+        if bytestr.count(punc) > 0:
+            punctuation_boost += 1
+
+    # try:
+    #     if not bytestr.decode().isprintable():
+    #         return 0
+    # except UnicodeDecodeError:
+    #     return 0
 
     if score == 0:
         return 0
 
-    return 100 / score
+    return 100 / score + punctuation_boost
 
 
 def load_dict(file):
@@ -275,16 +281,23 @@ def load_dict(file):
 
 
 class ScoredPlaintext(namedtuple('ScoredPlaintext', 'bytestr')):
-    def __new__(cls, bytestr, scoring_func=plaintext_score_diff_from_norm):
+    def __new__(cls, bytestr, scoring_func=plaintext_score_diff_from_norm, key=None):
         self = super(ScoredPlaintext, cls).__new__(cls, bytestr)
         self._score = scoring_func(bytestr)
+        self._key = key
         return self
 
     @property
     def score(self):
         return self._score
 
+    def key(self):
+        return self._key
+
     def __str__(self):
+        if self._key:
+            return "ScoredPlaintext: Key: " + str(self._key) + "\tScore: " + str(self.score) + "\tBytestring: " + str(
+                self.bytestr)
         return "ScoredPlaintext: Score: " + str(self.score) + "\tBytestring: " + str(self.bytestr)
 
 
