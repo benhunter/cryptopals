@@ -143,9 +143,14 @@ def base64_to_bytes(b64data):
     :return:
     '''
 
+    if isinstance(b64data, str):
+        b64data = b64data.encode()
+
     assert isinstance(b64data, bytes)
 
     decoded = bytearray()
+
+    # b64data = b64data.replace(b'\n', b'')
 
     for quad in groups(b64data, 4):
         # print(quad, 'len(quad)', len(quad))
@@ -230,12 +235,14 @@ def test_hex_to_base64():
     print('hexlify output type:', type(binascii.hexlify(unhex)))
 
 
-def test_base64_to_hex():
+def test_base64_to_bytes():
     print(base64_to_bytes(b'aaaa'))
     print(base64_to_bytes(b'VGhpcyBpcyBvbmx5IGEgdGVz'))  # 'This is only a tes'
     print(base64_to_bytes(b'VGhpcyBpcyBvbmx5IGEgdGVzdA=='))  # 'This is only a test'
     print(base64_to_bytes(b'VEhJUyBJUyBPTkxZIEEgVEVTVA=='))  # 'THIS IS ONLY A TEST'
     print(base64_to_bytes(b'VGhpcyBJcyBPbmw='))  # 'This Is Onl'
+
+    print(base64_to_bytes('VGhpcyBJcyBPbmw='))  # 'This Is Onl'
 
 # Base64 Table
 ''' Base64 Table
