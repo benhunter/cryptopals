@@ -8,7 +8,9 @@ import itertools
 from Crypto.Cipher import AES
 
 import util
+import xor
 
+BLOCK_SIZE = 16
 
 def pkcs7pad(text, length):
     # Common padding for CBC mode block ciphers
@@ -23,7 +25,20 @@ def pkcs7pad(text, length):
 
 def aes_cbc_decrypt(data, key, IV):
     # 0th block with IV
-    extended_IV = IV * (16 / len(IV))
+    if len(IV) is not BLOCK_SIZE:
+        raise ValueError("IV must be " + str(BLOCK_SIZE) + " bytes.")
+
+    # encrypt first block
+    aes_cipher = AES.new(key=key, mode=AES.MODE_ECB)
+    block = aes_cipher.decrypt(ciphertext)
+    # xor with IV
+
+    extended_IV = (IV * (BLOCK_SIZE // len(IV) + 1))[:BLOCK_SIZE]
+    print(extended_IV)
+
+    d = xor.fixed_xor(data[:BLOCK_SIZE], extended_IV)
+    print(d, len(d))
+
     # while more data:
     while False:
         pass
@@ -31,7 +46,7 @@ def aes_cbc_decrypt(data, key, IV):
     return 0
 
 
-def test_decode_aes_ecb():
+def test_decrypt_aes_ecb():
     # Set 1, Challenge 7
 
     cipher_file = '7.txt'
@@ -81,12 +96,14 @@ def test_pkcs7_padding():
 
 
 def test_aes_cbc_decrypt():
+    # Set 2, Challenge 10
     file = '10.txt'
     key = b'YELLOW SUBMARINE'
     IV = bytearray([0 for i in range(16 * 8)])
 
     with open(file) as f:
         ciphertext = base64.b64decode(f.read())
+        print(type(ciphertext))
 
     plaintext = aes_cbc_decrypt(ciphertext, key, IV)
     print(plaintext)
