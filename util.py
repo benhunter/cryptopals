@@ -68,7 +68,7 @@ DICTIONARY_FILE = 'MainEnglishDictionary_ProbWL.txt'
 def groups(seq, length):
     '''
     Yield groups of specified length from a sequence. The final yield will provide whatever data is left in the
-    sequence, without padding.Useful in a for statement:
+    sequence, without padding. Useful in a for statement:
         for pair in groups('abcdefg', 2):
             do_the_thing(pair)
     :param seq: A slicable object like string or list.

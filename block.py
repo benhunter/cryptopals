@@ -24,26 +24,45 @@ def pkcs7pad(text, length):
 
 
 def aes_cbc_decrypt(data, key, IV):
-    # 0th block with IV
+    '''
+    Decrypt Cipher Block Chaining (CBC) with AES on each block.
+    https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_(CBC)
+    :param data: Encrypted bytes.
+    :param key: Bytes to decrypt.
+    :param IV: Initialization Vector. Must be block size (16 bytes default).
+    :return:
+    '''
+    #
+
     if len(IV) is not BLOCK_SIZE:
         raise ValueError("IV must be " + str(BLOCK_SIZE) + " bytes.")
 
-    # encrypt first block
+    # 0th block with IV
+    # decrypt first block
     aes_cipher = AES.new(key=key, mode=AES.MODE_ECB)
-    block = aes_cipher.decrypt(ciphertext)
+
+    # iterator for grabbing sequential blocks from data
+    next_block = util.groups(data, BLOCK_SIZE)
+    all_blocks = list(next_block)
+    # first block
+    cipher_block = all_blocks[0]
+    decrypt_block = aes_cipher.decrypt(cipher_block)
+
     # xor with IV
+    xor_block = xor.fixed_xor(decrypt_block, IV)
+    print(xor_block, len(xor_block), type(xor_block))
+    result = xor_block
 
-    extended_IV = (IV * (BLOCK_SIZE // len(IV) + 1))[:BLOCK_SIZE]
-    print(extended_IV)
-
-    d = xor.fixed_xor(data[:BLOCK_SIZE], extended_IV)
-    print(d, len(d))
-
+    prev_cipher_block = cipher_block
     # while more data:
-    while False:
-        pass
+    for cipher_block in all_blocks[1:]:
+        decrypt_block = aes_cipher.decrypt(cipher_block)
+        xor_block = xor.fixed_xor(prev_cipher_block, decrypt_block)
+        print(xor_block, len(xor_block))
+        result += xor_block
+        prev_cipher_block = cipher_block
         # encrypt next block
-    return 0
+    return result
 
 
 def test_decrypt_aes_ecb():
@@ -99,11 +118,11 @@ def test_aes_cbc_decrypt():
     # Set 2, Challenge 10
     file = '10.txt'
     key = b'YELLOW SUBMARINE'
-    IV = bytearray([0 for i in range(16 * 8)])
+    IV = bytearray([0 for i in range(16)])
 
     with open(file) as f:
-        ciphertext = base64.b64decode(f.read())
+        ciphertext = base64.b64decode(f.read())  # TODO use my base_64 for this
         print(type(ciphertext))
 
     plaintext = aes_cbc_decrypt(ciphertext, key, IV)
-    print(plaintext)
+    print(plaintext.decode())
