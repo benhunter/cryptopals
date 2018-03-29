@@ -304,3 +304,9 @@ def test_encrypt_randomly():
     #         print(True)
     # print('count:', count)
     print(detect_aes_mode(unknown_crypto))
+
+
+def test_decrypt_ecb_byte_at_time():
+    # Set 2, Challenge 12
+
+    print()
