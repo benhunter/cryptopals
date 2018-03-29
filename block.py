@@ -296,8 +296,11 @@ def test_encrypt_randomly():
     # print(len(unknown_crypto))
     # print(detect_aes_cbc(unknown_crypto))
 
+    # count = 0
     # for i in range(100000):
     #     unknown_crypto = encrypt_randomly(plaintext, random_aes_key())
     #     if detect_aes_cbc(unknown_crypto):
+    #         count += 1
     #         print(True)
+    # print('count:', count)
     print(detect_aes_mode(unknown_crypto))
