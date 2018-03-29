@@ -163,6 +163,8 @@ def encrypt_randomly(data, key):
     # Add random 5-10 bytes after data.
     post = os.urandom(5) + os.urandom(ord(os.urandom(1)) % 6)
 
+    data = pre + data + post
+
     # choose ECB or CBC randomly
     # encrypt_func = random.SystemRandom().choice([aes_ecb_encrypt, aes_cbc_encrypt])  # won't work becuase different function signatures.
     if random.SystemRandom().choice((True, False)):
@@ -172,26 +174,25 @@ def encrypt_randomly(data, key):
         return aes_cbc_encrypt(data, key, IV)
 
 
-def detect_aes_cbc(data):
+def detect_aes_ecb(data):
     '''
-    Detects AES CBC by looking for two identical blocks.
+    Detects AES ECB by looking for two identical blocks.
     :param data: Encrypted bytes.
     :return: Bool, true if CBC is detected.
     '''
-    for combo in itertools.combinations(util.groups(data[:-1], 16), 2):
+    for combo in itertools.combinations(util.groups(data[:-1], BLOCK_SIZE), 2):
         if combo[0] == combo[1]:
             return True
     return False
 
 
 def detect_aes_mode(data):
-    # TODO detect AES mode ECB or CBC
-    return 'ECB' if detect_aes_cbc(data) else 'CBC'
+    # detect AES mode ECB or CBC
+    return 'ECB' if detect_aes_ecb(data) else 'CBC'
 
 
 def test_aes_ecb_encrypt():
     # Set 1, Challenge 7
-    # TODO implement
     data = b"Ehrsam, Meyer, Smith and Tuchman invented the Cipher Block Chaining (CBC) mode of operation in 1976."
     key = 'YELLOW SUBMARINE'
     ciphertext = aes_ecb_encrypt(data, key)
@@ -248,7 +249,7 @@ def test_detect_aes_ecb():
                 if combo[0] == combo[1]:
                     print(index, line)
         print(lines)
-    assert detect_aes_cbc(lines[132])
+    assert detect_aes_ecb(lines[132])
 
 
 def test_pkcs7_padding():
@@ -290,23 +291,76 @@ def test_random_aes_key():
 def test_encrypt_randomly():
     # Set 2, Challenge 11
     # plaintext = b"This is only a test. Please keep your seats in the upright and locked position. Prepare for landing."
-    plaintext = b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    # plaintext = b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  # before padding, min length of repeating char is 32 for 2 blocks of 16
+    plaintext = b"DEADBEEFISSOGOODDEADBEEFISSOGOODDEADBEEFISSOGOODDEADBEEFISSOGOOD"  # or same 16 char must repeat
     unknown_crypto = encrypt_randomly(plaintext, random_aes_key())
     # print(unknown_crypto)
     # print(len(unknown_crypto))
     # print(detect_aes_cbc(unknown_crypto))
 
-    # count = 0
-    # for i in range(100000):
-    #     unknown_crypto = encrypt_randomly(plaintext, random_aes_key())
-    #     if detect_aes_cbc(unknown_crypto):
-    #         count += 1
-    #         print(True)
-    # print('count:', count)
-    print(detect_aes_mode(unknown_crypto))
+    count = 0
+    for i in range(10000):
+        unknown_crypto = encrypt_randomly(plaintext, random_aes_key())
+        if detect_aes_ecb(unknown_crypto):
+            count += 1
+            print(True)
+    print('count:', count)
+    # print(detect_aes_mode(unknown_crypto))
 
 
 def test_decrypt_ecb_byte_at_time():
     # Set 2, Challenge 12
 
-    print()
+    my_str = b'A'
+    unknown_str = 'Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK'
+
+    random_key = random_aes_key()
+
+    # detect block size
+    # print('unknown_str', len(base64.b64decode(unknown_str)))
+    low = len(aes_ecb_encrypt(base64.b64decode(unknown_str), random_key))
+    detected_block_length = 0
+    for i in range(50):
+        ciphertext = aes_ecb_encrypt(my_str * i + base64.b64decode(unknown_str), random_key)
+        # print(ciphertext)
+        if len(ciphertext) > low:
+            print(len(ciphertext) - low)
+            detected_block_length = len(ciphertext) - low
+            break
+        # print(len(ciphertext))
+    print('Detected block size:', detected_block_length)
+
+    # detect ECB
+    assert detect_aes_ecb(aes_ecb_encrypt(my_str * 40 + base64.b64decode(unknown_str), random_key))
+
+    # make a block one byte short and build dict of all possible last chars
+    short_block = b'A' * (detected_block_length - 1)
+    lastchar_dict = {}
+    for i in range(256):
+        my_str = short_block + chr(i).encode()
+        lastchar_dict[
+            aes_ecb_encrypt(my_str + base64.b64decode(unknown_str), random_key)[:detected_block_length]] = chr(i)
+    print(lastchar_dict)
+
+    block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[:detected_block_length]
+    print(block)
+    print('char:', lastchar_dict[block])
+
+    # next char
+    # short_block = short_block[1:] + lastchar_dict[block].encode()
+    # print(short_block)
+
+    short_block = b'A' * (detected_block_length - 1)
+    for position in range(detected_block_length):
+        lastchar_dict = {}
+        for i in range(256):
+            my_str = short_block + chr(i).encode()
+            # print('my_str', my_str)
+            lastchar_dict[
+                aes_ecb_encrypt(my_str + base64.b64decode(unknown_str), random_key)[:detected_block_length]] = chr(i)
+        block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[:detected_block_length]
+        print(block)
+        print('char:', lastchar_dict[block])
+
+        short_block = short_block[1:] + lastchar_dict[block].encode()
+        print(short_block)
