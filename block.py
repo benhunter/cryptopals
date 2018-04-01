@@ -361,20 +361,27 @@ def test_decrypt_ecb_byte_at_time():
             # pprint(lastchar_dict)
             # print('length lastchar_dict:', len(lastchar_dict))
 
-            print('4. plaintext before oracle:', short_block + base64.b64decode(unknown_str), 'length:',
-                  len(short_block + base64.b64decode(unknown_str)))
+            # print('4. plaintext before oracle:', short_block + base64.b64decode(unknown_str), 'length:',
+            #       len(short_block + base64.b64decode(unknown_str)))
 
             crypt_block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[
                           detected_block_length * block:detected_block_length * (block + 1)]
             print('5. crypt_block:', crypt_block, 'len(crypt_block):', len(crypt_block))
 
-            print('6. char:', lastchar_dict[crypt_block])
+            # if last byte of block is \x01, padding may be in use
+            if lastchar_dict[crypt_block] == '\x01':
+                print('Possible padding detected by last character.')
+                break
+            try:
+                print('6. char:', lastchar_dict[crypt_block], ord(lastchar_dict[crypt_block]), 'type:',
+                      type(lastchar_dict[crypt_block]))
+            except KeyError as ke:
+                print('Possible padding detected by KeyError.')
+                print(ke)
+                break
 
             plaintext += lastchar_dict[crypt_block].encode()
             print('7. plaintext solved', plaintext, 'len(plaintext)', len(plaintext))
 
         print('8. plaintext:', plaintext)
-
-
-if __name__ == "__main__":
-    test_decrypt_ecb_byte_at_time()
+    assert plaintext == b"Rollin' in my 5.0\nWith my rag-top down so my hair can blow\nThe girlies on standby waving just to say hi\nDid you stop? No, I just drove by\n"
