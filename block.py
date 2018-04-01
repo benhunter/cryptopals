@@ -346,7 +346,7 @@ def test_decrypt_ecb_byte_at_time():
     for block in range((len(base64.b64decode(unknown_str)) // detected_block_length) + 1):
         for position in range(detected_block_length, 0, -1):
             short_block = b'A' * (position - 1)
-            print('1. short_block:', short_block, 'length:', len(short_block))
+            print('1. block:', block, 'short_block:', short_block, 'length:', len(short_block))
             known_crypt = b''
 
             # build lookup table for unknown last character
@@ -361,16 +361,19 @@ def test_decrypt_ecb_byte_at_time():
             # pprint(lastchar_dict)
             # print('length lastchar_dict:', len(lastchar_dict))
 
+            print('4. plaintext before oracle:', short_block + base64.b64decode(unknown_str), 'length:',
+                  len(short_block + base64.b64decode(unknown_str)))
+
             crypt_block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[
                           detected_block_length * block:detected_block_length * (block + 1)]
-            print('4. crypt_block:', crypt_block, 'len(crypt_block):', len(crypt_block))
+            print('5. crypt_block:', crypt_block, 'len(crypt_block):', len(crypt_block))
 
-            print('5. char:', lastchar_dict[crypt_block])
+            print('6. char:', lastchar_dict[crypt_block])
 
             plaintext += lastchar_dict[crypt_block].encode()
-            print('6. plaintext', plaintext, 'len(plaintext)', len(plaintext))
+            print('7. plaintext solved', plaintext, 'len(plaintext)', len(plaintext))
 
-        print('7. plaintext:', plaintext)
+        print('8. plaintext:', plaintext)
 
 
 if __name__ == "__main__":
