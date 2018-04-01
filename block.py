@@ -314,6 +314,9 @@ def test_decrypt_ecb_byte_at_time():
     my_str = b'A'
     unknown_str = 'Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK'
 
+    print(base64.b64decode(unknown_str))
+    print(len(base64.b64decode(unknown_str)))
+
     random_key = random_aes_key()
 
     # detect block size
@@ -333,34 +336,42 @@ def test_decrypt_ecb_byte_at_time():
     # detect ECB
     assert detect_aes_ecb(aes_ecb_encrypt(my_str * 40 + base64.b64decode(unknown_str), random_key))
 
+    plaintext = []  # blocks of plaintext
+
+    # attack block 0
     # make a block one byte short and build dict of all possible last chars
-    short_block = b'A' * (detected_block_length - 1)
-    lastchar_dict = {}
-    for i in range(256):
-        my_str = short_block + chr(i).encode()
-        lastchar_dict[
-            aes_ecb_encrypt(my_str + base64.b64decode(unknown_str), random_key)[:detected_block_length]] = chr(i)
-    print(lastchar_dict)
 
-    block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[:detected_block_length]
-    print(block)
-    print('char:', lastchar_dict[block])
+    plaintext = b''
 
-    # next char
-    # short_block = short_block[1:] + lastchar_dict[block].encode()
-    # print(short_block)
+    for block in range((len(base64.b64decode(unknown_str)) // detected_block_length) + 1):
+        for position in range(detected_block_length, 0, -1):
+            short_block = b'A' * (position - 1)
+            print('1. short_block:', short_block, 'length:', len(short_block))
+            known_crypt = b''
 
-    short_block = b'A' * (detected_block_length - 1)
-    for position in range(detected_block_length):
-        lastchar_dict = {}
-        for i in range(256):
-            my_str = short_block + chr(i).encode()
-            # print('my_str', my_str)
-            lastchar_dict[
-                aes_ecb_encrypt(my_str + base64.b64decode(unknown_str), random_key)[:detected_block_length]] = chr(i)
-        block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[:detected_block_length]
-        print(block)
-        print('char:', lastchar_dict[block])
+            # build lookup table for unknown last character
+            lastchar_dict = {}
+            for i in range(256):
+                my_str = short_block + plaintext + chr(i).encode()
+                # print('2. my_str', my_str)
+                lastchar_dict[aes_ecb_encrypt(my_str, random_key)[
+                              detected_block_length * block:detected_block_length * (block + 1)]] = chr(i)
 
-        short_block = short_block[1:] + lastchar_dict[block].encode()
-        print(short_block)
+            # print('3. lastchar_dict')
+            # pprint(lastchar_dict)
+            # print('length lastchar_dict:', len(lastchar_dict))
+
+            crypt_block = aes_ecb_encrypt(short_block + base64.b64decode(unknown_str), random_key)[
+                          detected_block_length * block:detected_block_length * (block + 1)]
+            print('4. crypt_block:', crypt_block, 'len(crypt_block):', len(crypt_block))
+
+            print('5. char:', lastchar_dict[crypt_block])
+
+            plaintext += lastchar_dict[crypt_block].encode()
+            print('6. plaintext', plaintext, 'len(plaintext)', len(plaintext))
+
+        print('7. plaintext:', plaintext)
+
+
+if __name__ == "__main__":
+    test_decrypt_ecb_byte_at_time()
