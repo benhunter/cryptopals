@@ -191,6 +191,26 @@ def detect_aes_mode(data):
     return 'ECB' if detect_aes_ecb(data) else 'CBC'
 
 
+def parse_cookie(string):
+    d = {}
+    print(string)
+    for i in string.split('&'):
+        pair = i.split('=')
+        d[pair[0]] = pair[1]
+    return d
+
+
+def profile_format(email):
+    email = email.replace('&', '')
+    email = email.replace('=', '')
+
+    return parse_cookie('email=' + email + '&uid=10&role=user')
+
+
+def encode_profile(profile):
+    return ('email=' + profile['email'] + '&uid=' + profile['uid'] + '&role=' + profile['role']).encode()
+
+
 def test_aes_ecb_encrypt():
     # Set 1, Challenge 7
     data = b"Ehrsam, Meyer, Smith and Tuchman invented the Cipher Block Chaining (CBC) mode of operation in 1976."
@@ -336,11 +356,6 @@ def test_decrypt_ecb_byte_at_time():
     # detect ECB
     assert detect_aes_ecb(aes_ecb_encrypt(my_str * 40 + base64.b64decode(unknown_str), random_key))
 
-    plaintext = []  # blocks of plaintext
-
-    # attack block 0
-    # make a block one byte short and build dict of all possible last chars
-
     plaintext = b''
 
     for block in range((len(base64.b64decode(unknown_str)) // detected_block_length) + 1):
@@ -385,3 +400,29 @@ def test_decrypt_ecb_byte_at_time():
 
         print('8. plaintext:', plaintext)
     assert plaintext == b"Rollin' in my 5.0\nWith my rag-top down so my hair can blow\nThe girlies on standby waving just to say hi\nDid you stop? No, I just drove by\n"
+    assert plaintext == base64.b64decode(unknown_str)
+
+
+def test_ecb_cut_and_paste():
+    # Set 2, Challenge 13
+    c = parse_cookie('foo=bar&baz=qux&zap=zazzle')
+    print(c)
+    print(profile_format('foo@bar.com'))
+    print(profile_format('foo@bar.com&role=admin'))
+    print(encode_profile(profile_format('foo@bar.com')))
+
+    key = random_aes_key()
+
+    cipher = aes_ecb_encrypt(encode_profile(profile_format('foo@bar.com')), key)
+    plain = parse_cookie(aes_ecb_decrypt(cipher, key).decode())
+    print(plain)
+
+    # make a role=admin profile
+    attack = b'email=foo@bar.com&uid=10&role=admin'
+    attack_cipher = aes_ecb_encrypt(attack, key)
+
+    attack_cipher = attack_cipher[BLOCK_SIZE:]
+    # print(attack_cipher, len(attack_cipher))
+
+    attack_cipher = cipher[:BLOCK_SIZE] + attack_cipher
+    print(aes_ecb_decrypt(attack_cipher, key))
